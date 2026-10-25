@@ -26,23 +26,23 @@
                             </v-chip>
                             <span class="ml-auto text-caption">{{ temperatureLabel(tool) }}</span>
                         </div>
-                        <v-simple-table dense>
+                        <v-simple-table dense class="offset-table">
                             <thead>
                                 <tr>
-                                    <th></th>
-                                    <th class="text-right">{{ $t('Panels.Toolchanger.Saved') }}</th>
-                                    <th class="text-right">{{ $t('Panels.Toolchanger.New') }}</th>
-                                    <th class="text-right">{{ $t('Panels.Toolchanger.Delta') }}</th>
+                                    <th class="px-1"></th>
+                                    <th class="text-right px-1">{{ $t('Panels.Toolchanger.Saved') }}</th>
+                                    <th class="text-right px-1">{{ $t('Panels.Toolchanger.New') }}</th>
+                                    <th class="text-right px-1">{{ $t('Panels.Toolchanger.Delta') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="row in offsetRows(tool)" :key="row.axis">
-                                    <td class="font-weight-bold text-uppercase">{{ row.axis }}</td>
-                                    <td class="text-right text--secondary">{{ row.saved }}</td>
-                                    <td class="text-right" :class="row.changed ? 'warning--text font-weight-bold' : ''">
+                                    <td class="font-weight-bold text-uppercase px-1">{{ row.axis }}</td>
+                                    <td class="text-right text--secondary px-1">{{ row.saved }}</td>
+                                    <td class="text-right px-1" :class="row.changed ? 'warning--text font-weight-bold' : ''">
                                         {{ row.current }}
                                     </td>
-                                    <td class="text-right" :class="row.deltaClass">{{ row.delta }}</td>
+                                    <td class="text-right px-1" :class="row.deltaClass">{{ row.delta }}</td>
                                 </tr>
                             </tbody>
                         </v-simple-table>
@@ -122,6 +122,7 @@
                         outlined
                         class="mr-2 mb-2"
                         :color="seekSelected === name ? 'warning' : undefined"
+                        :disabled="!canSelectSeek"
                         :title="name"
                         @click="selectSeek(name)">
                         {{ seekLabel(name) }}
@@ -231,8 +232,13 @@ export default class ToolOffsetsPanel extends Mixins(ToolchangerMixin) {
         this.seekParams = { ...this.seekParams, [this.seekSelected]: value }
     }
 
+    // selecting a command is safe to do without homing, but not while a print or calibration is running
+    get canSelectSeek(): boolean {
+        return this.klipperReadyForGui && !this.printerIsPrinting && !this.isCalibrating
+    }
+
     get canRunSeek(): boolean {
-        return this.klipperReadyForGui && !this.printerIsPrinting && this.isHomed && !this.isCalibrating
+        return this.canSelectSeek && this.isHomed
     }
 
     @Watch('klipperReadyForGui')
