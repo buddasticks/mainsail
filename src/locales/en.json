@@ -1091,6 +1091,7 @@
         },
 		
 		"Toolchanger": {
+			"BeforeLastRun": "before last run",
 			"Delta": "Delta",
 			"Homed": "homed",
 			"Idle": "idle",
@@ -1103,6 +1104,7 @@
 			"SaveConfig": "SAVE_CONFIG",
 			"SaveConfigPending": "Klipper has pending configuration changes. SAVE_CONFIG saves them and restarts Klipper.",
 			"Saved": "Saved",
+			"SavedConfig": "config as loaded",
 			"TapToConfirm": "Tap again to confirm"
 		},
 		"ToolCounterPanel": {
@@ -1120,8 +1122,18 @@
 			"CalibrateXY": "XY offsets",
 			"CalibrateZ": "Z offsets",
 			"Check": "Check",
+			"EddySeek": "EddySeek",
 			"Headline": "Tool offsets",
-			"Hint": "Saved is the offset in your config as loaded. New is the running offset, amber until SAVE_CONFIG. Delta is new minus saved."
+			"Hint": "Saved is the offset in your config as loaded. New is the running offset, amber until SAVE_CONFIG. Delta is new minus saved.",
+			"Run": "Run",
+			"SavedColumn": "Saved column shows:",
+			"SeekGroupCoil": "Coil",
+			"SeekGroupOther": "Other",
+			"SeekGroupRead": "Read / test",
+			"SeekGroupSetup": "Setup",
+			"SeekHint": "Optional parameters go in the box, e.g. FIND=1 or TOOL=1 REPEATS=3. These commands move the toolhead: home first and keep a hand on the e-stop.",
+			"SeekLoadError": "Could not read the command list from Klipper.",
+			"SeekNotFound": "No EDDY_SEEK commands found. Is [eddy_seek] loaded?"
 		},
 		"ToolTrimPanel": {
 			"Headline": "Tool trim",

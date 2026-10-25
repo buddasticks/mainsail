@@ -3,6 +3,12 @@ import BaseMixin from '@/components/mixins/base'
 
 export type ToolAxis = 'x' | 'y' | 'z'
 
+export interface ToolOffsets {
+    x: number
+    y: number
+    z: number
+}
+
 export interface PrinterTool {
     name: string
     tool_number: number
@@ -39,6 +45,8 @@ export default class ToolchangerMixin extends BaseMixin {
     axes: ToolAxis[] = TOOL_AXES
     armedKey: string | null = null
     armTimer: number | null = null
+    // running offsets recorded just before a calibration; null until one has run this session
+    baseOffsets: Record<number, ToolOffsets> | null = null
 
     get tools(): PrinterTool[] {
         return Object.keys(this.$store.state.printer)
@@ -79,6 +87,12 @@ export default class ToolchangerMixin extends BaseMixin {
 
     get stateLabel(): string {
         return String(this.$t(this.printerIsPrinting ? 'Panels.Toolchanger.Printing' : 'Panels.Toolchanger.Idle'))
+    }
+
+    get savedSourceLabel(): string {
+        const key = this.baseOffsets ? 'Panels.Toolchanger.BeforeLastRun' : 'Panels.Toolchanger.SavedConfig'
+
+        return String(this.$t(key))
     }
 
     get savePending(): boolean {
@@ -130,15 +144,37 @@ export default class ToolchangerMixin extends BaseMixin {
         return `${Number(extruder.temperature).toFixed(1)}°${target}`
     }
 
-    // config value as loaded at Klipper start: section names are lowercase in configfile.settings
+    // before the first calibration this session: config as loaded at Klipper start
+    // after a calibration has been started: running offsets recorded just before it
     savedOffset(toolNumber: number, axis: ToolAxis): number {
+        const base = this.baseOffsets?.[toolNumber]
+        if (base) return base[axis]
+
         const settings = this.$store.state.printer.configfile?.settings?.[`tool t${toolNumber}`] ?? {}
 
         return Number(settings[`gcode_${axis}_offset`] ?? 0)
     }
 
+    snapshotBaseOffsets(): void {
+        const snapshot: Record<number, ToolOffsets> = {}
+        this.tools.forEach((tool) => {
+            const values = { x: 0, y: 0, z: 0 }
+            TOOL_AXES.forEach((axis) => {
+                values[axis] = this.currentOffset(tool, axis)
+            })
+            snapshot[tool.tool_number] = values
+        })
+        this.baseOffsets = snapshot
+    }
+
     currentOffset(tool: PrinterTool, axis: ToolAxis): number {
         return tool[OFFSET_KEYS[axis]] as number
+    }
+
+    pendingOffset(toolNumber: number, axis: ToolAxis): number | null {
+        const items = this.$store.state.printer.configfile?.save_config_pending_items ?? {}
+
+        return items[`tool T${toolNumber}`]?.[`gcode_${axis}_offset`] ?? null
     }
 
     offsetRows(tool: PrinterTool): OffsetRow[] {

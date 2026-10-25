@@ -51,6 +51,9 @@
             </v-row>
 
             <div class="caption text--secondary mt-2">{{ $t('Panels.ToolOffsetsPanel.Hint') }}</div>
+            <div class="caption text--secondary">
+                {{ $t('Panels.ToolOffsetsPanel.SavedColumn') }} {{ savedSourceLabel }}
+            </div>
 
             <v-divider class="my-3" />
 
@@ -96,22 +99,87 @@
                     {{ armLabel('save', 'Panels.Toolchanger.SaveConfig') }}
                 </v-btn>
             </v-alert>
+
+            <v-divider class="my-3" />
+
+            <div class="text-subtitle-2">{{ $t('Panels.ToolOffsetsPanel.EddySeek') }}</div>
+            <div class="caption text--secondary mb-2">{{ $t('Panels.ToolOffsetsPanel.SeekHint') }}</div>
+
+            <div v-if="seekError" class="caption error--text">{{ seekError }}</div>
+            <div v-else-if="seekGroups.length === 0" class="caption text--secondary">
+                {{ $t('Panels.ToolOffsetsPanel.SeekNotFound') }}
+            </div>
+
+            <div v-for="group in seekGroups" :key="group.key" class="mb-1">
+                <div class="caption text-uppercase text--secondary mt-2">
+                    {{ $t(`Panels.ToolOffsetsPanel.${group.key}`) }}
+                </div>
+                <div class="d-flex flex-wrap">
+                    <v-btn
+                        v-for="name in group.names"
+                        :key="name"
+                        small
+                        outlined
+                        class="mr-2 mb-2"
+                        :color="seekSelected === name ? 'warning' : undefined"
+                        :title="name"
+                        @click="selectSeek(name)">
+                        {{ seekLabel(name) }}
+                    </v-btn>
+                </div>
+            </div>
+
+            <v-card v-if="seekSelected" outlined class="pa-2 mt-2">
+                <div class="font-weight-bold text-uppercase">{{ seekSelected }}</div>
+                <div class="caption text--secondary mb-2">{{ seekHelp[seekSelected] }}</div>
+                <div class="d-flex align-center">
+                    <v-text-field
+                        v-model="seekParamValue"
+                        dense
+                        outlined
+                        hide-details
+                        spellcheck="false"
+                        class="mr-2" />
+                    <v-btn small outlined color="warning" :disabled="!canRunSeek" @click="runSeek">
+                        {{ armLabel('seek', 'Panels.ToolOffsetsPanel.Run') }}
+                    </v-btn>
+                </div>
+            </v-card>
         </div>
     </panel>
 </template>
 
 <script lang="ts">
-import { Component, Mixins } from 'vue-property-decorator'
+import { Component, Mixins, Watch } from 'vue-property-decorator'
 import ToolchangerMixin from '@/components/mixins/toolchanger'
 import Panel from '@/components/ui/Panel.vue'
 import { mdiWrench } from '@mdi/js'
 
 type CalibrateMode = 'z' | 'xy' | 'all'
 
+interface SeekGroup {
+    key: string
+    names: string[]
+}
+
 const CALIBRATE_COMMANDS: Record<CalibrateMode, string> = {
     z: 'KTC_EDDY_CALIBRATE_Z',
     xy: 'KTC_EDDY_CALIBRATE_XY',
     all: 'KTC_EDDY_CALIBRATE_ALL',
+}
+
+const SEEK_PATTERN = /^(EDDY_SEEK|KTC_EDDY_GOTO_COIL|KTC_EDDY_SET_COIL)/i
+const SEEK_GROUPS: SeekGroup[] = [
+    { key: 'SeekGroupRead', names: ['EDDY_SEEK_QUERY', 'EDDY_SEEK_STATUS', 'EDDY_SEEK_ACCURACY'] },
+    {
+        key: 'SeekGroupSetup',
+        names: ['EDDY_SEEK_START', 'EDDY_SEEK_SET', 'EDDY_SEEK_TOOL', 'EDDY_SEEK_APPLY_OFFSET', 'EDDY_SEEK_RESET'],
+    },
+    { key: 'SeekGroupCoil', names: ['KTC_EDDY_GOTO_COIL', 'KTC_EDDY_SET_COIL'] },
+]
+const SEEK_DEFAULT_PARAMS: Record<string, string> = {
+    EDDY_SEEK_START: 'FIND=1',
+    KTC_EDDY_SET_COIL: 'USE_CURRENT=1',
 }
 
 @Component({
@@ -121,6 +189,10 @@ export default class ToolOffsetsPanel extends Mixins(ToolchangerMixin) {
     mdiWrench = mdiWrench
 
     selectedTools: number[] = []
+    seekHelp: Record<string, string> = {}
+    seekError = ''
+    seekSelected: string | null = null
+    seekParams: Record<string, string> = {}
 
     get toolArgs(): string {
         if (this.selectedTools.length === 0) return ''
@@ -128,6 +200,48 @@ export default class ToolOffsetsPanel extends Mixins(ToolchangerMixin) {
         const numbers = [...this.selectedTools].sort((a, b) => a - b)
 
         return ` TOOLS=${numbers.join(',')}`
+    }
+
+    get seekGroups(): SeekGroup[] {
+        const available = Object.keys(this.seekHelp)
+        const groups: SeekGroup[] = []
+        const used: string[] = []
+
+        SEEK_GROUPS.forEach((group) => {
+            used.push(...group.names)
+            const names = group.names.filter((name) => available.includes(name))
+            if (names.length) groups.push({ key: group.key, names })
+        })
+
+        const rest = available.filter((name) => !used.includes(name)).sort()
+        if (rest.length) groups.push({ key: 'SeekGroupOther', names: rest })
+
+        return groups
+    }
+
+    get seekParamValue(): string {
+        if (this.seekSelected === null) return ''
+
+        return this.seekParams[this.seekSelected] ?? SEEK_DEFAULT_PARAMS[this.seekSelected] ?? ''
+    }
+
+    set seekParamValue(value: string) {
+        if (this.seekSelected === null) return
+
+        this.seekParams = { ...this.seekParams, [this.seekSelected]: value }
+    }
+
+    get canRunSeek(): boolean {
+        return this.klipperReadyForGui && !this.printerIsPrinting && this.isHomed && !this.isCalibrating
+    }
+
+    @Watch('klipperReadyForGui')
+    onReadyChanged(ready: boolean): void {
+        if (ready) this.loadSeekCommands()
+    }
+
+    mounted(): void {
+        this.loadSeekCommands()
     }
 
     isSelected(toolNumber: number): boolean {
@@ -148,11 +262,47 @@ export default class ToolOffsetsPanel extends Mixins(ToolchangerMixin) {
     }
 
     calibrate(mode: CalibrateMode): void {
+        // only the run tap starts a calibration, so only that tap records the before-last-run offsets
+        if (this.armedKey === mode) this.snapshotBaseOffsets()
+
         this.armOrRun(mode, `${CALIBRATE_COMMANDS[mode]}${this.toolArgs}`)
     }
 
     saveConfig(): void {
         this.armOrRun('save', 'SAVE_CONFIG')
+    }
+
+    async loadSeekCommands(): Promise<void> {
+        if (!this.klipperReadyForGui) return
+
+        try {
+            const help = (await this.$socket.emitAndWait('printer.gcode.help')) as Record<string, string>
+            const seek: Record<string, string> = {}
+            Object.keys(help).forEach((name) => {
+                if (SEEK_PATTERN.test(name)) seek[name] = help[name]
+            })
+            this.seekHelp = seek
+            this.seekError = ''
+        } catch {
+            this.seekError = String(this.$t('Panels.ToolOffsetsPanel.SeekLoadError'))
+        }
+    }
+
+    seekLabel(name: string): string {
+        const words = name.replace(/^(EDDY_SEEK_|KTC_EDDY_)/i, '').replace(/_/g, ' ').toLowerCase()
+
+        return words.charAt(0).toUpperCase() + words.slice(1)
+    }
+
+    selectSeek(name: string): void {
+        this.disarm()
+        this.seekSelected = this.seekSelected === name ? null : name
+    }
+
+    runSeek(): void {
+        if (this.seekSelected === null) return
+
+        this.armOrRun('seek', `${this.seekSelected} ${this.seekParamValue}`.trim())
     }
 }
 </script>
