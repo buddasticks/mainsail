@@ -115,18 +115,25 @@
                     {{ $t(`Panels.ToolOffsetsPanel.${group.key}`) }}
                 </div>
                 <div class="d-flex flex-wrap">
-                    <v-btn
+                    <v-tooltip
                         v-for="name in group.names"
                         :key="name"
-                        small
-                        outlined
-                        class="mr-2 mb-2"
-                        :color="seekSelected === name ? 'warning' : undefined"
-                        :disabled="!canSelectSeek"
-                        :title="name"
-                        @click="selectSeek(name)">
-                        {{ seekLabel(name) }}
-                    </v-btn>
+                        bottom
+                        max-width="320">
+                        <template #activator="{ on, attrs }">
+                            <span class="d-inline-block mr-2 mb-2" v-bind="attrs" v-on="on">
+                                <v-btn
+                                    small
+                                    outlined
+                                    :color="seekSelected === name ? 'warning' : undefined"
+                                    :disabled="!canSelectSeek"
+                                    @click="selectSeek(name)">
+                                    {{ seekLabel(name) }}
+                                </v-btn>
+                            </span>
+                        </template>
+                        <span>{{ seekHelp[name] || name }}</span>
+                    </v-tooltip>
                 </div>
             </div>
 
