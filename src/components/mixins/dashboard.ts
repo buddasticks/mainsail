@@ -6,6 +6,7 @@ import {
     mdiArrowCollapseVertical,
     mdiCodeTags,
     mdiConsoleLine,
+    mdiCounter,
     mdiDipSwitch,
     mdiEngine,
     mdiGamepad,
@@ -13,7 +14,9 @@ import {
     mdiLedStrip,
     mdiPrinter3dNozzle,
     mdiThermometerLines,
+    mdiTune,
     mdiWebcam,
+    mdiWrench,
     mdiAdjust,
     mdiMulticast,
 } from '@mdi/js'
@@ -79,7 +82,7 @@ export default class DashboardMixin extends BaseMixin {
                 return mdiMulticast
             case 'afc':
                 return afcIconLogo
-			case 'tool-offsets':
+            case 'tool-offsets':
                 return mdiWrench
             case 'tool-trim':
                 return mdiTune
