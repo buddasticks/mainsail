@@ -106,6 +106,17 @@ export const getters: GetterTree<GuiState, RootState> = {
             allPanels = allPanels.filter((name) => name !== 'led-effects')
         }
 
+        // remove tool panels, if no toolchanger tools exist in Klipper
+        const hasToolchanger = Object.keys(rootState.printer ?? {}).some((name) => /^tool T\d+$/.test(name))
+        if (!hasToolchanger) {
+            allPanels = allPanels.filter((name) => !['tool-offsets', 'tool-trim', 'tool-counter'].includes(name))
+        }
+
+        // remove tool-counter panel, if no save_variables object exists in Klipper
+        if (!rootState.printer?.save_variables) {
+            allPanels = allPanels.filter((name) => name !== 'tool-counter')
+        }
+		
         return allPanels
     },
 

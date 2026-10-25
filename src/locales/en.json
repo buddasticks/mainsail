@@ -1088,7 +1088,48 @@
             "SaveInfoDescription": "The new Z-Offset has been calculated and registered. Click on \"SAVE CONFIG\" to save it to the printer.cfg and restart Klipper.",
             "SaveInfoDescriptionPrint": "The new Z-Offset has been calculated and registered. After printing, click on \"SAVE CONFIG\" in the top bar to save it to the printer.cfg and restart Klipper.",
             "SaveInfoHeadline": "Information"
-        }
+        },
+		
+		"Toolchanger": {
+			"Delta": "Delta",
+			"Homed": "homed",
+			"Idle": "idle",
+			"Mounted": "mounted",
+			"MountedTool": "{tool} mounted",
+			"New": "New",
+			"NotHomed": "not homed",
+			"NoTool": "no tool",
+			"Printing": "printing",
+			"SaveConfig": "SAVE_CONFIG",
+			"SaveConfigPending": "Klipper has pending configuration changes. SAVE_CONFIG saves them and restarts Klipper.",
+			"Saved": "Saved",
+			"TapToConfirm": "Tap again to confirm"
+		},
+		"ToolCounterPanel": {
+			"Failures": "Failures",
+			"Headline": "Tool pickups",
+			"NoData": "No pickup counters saved yet",
+			"Pickups": "Pickups",
+			"Total": "Total tool changes",
+			"TotalCaption": "Lifetime count"
+		},
+		"ToolOffsetsPanel": {
+			"Calibrate": "Calibrate",
+			"CalibrateAll": "XYZ offsets",
+			"CalibrateHint": "Tools off = all tools. Selecting some measures only those. T0 is always the reference.",
+			"CalibrateXY": "XY offsets",
+			"CalibrateZ": "Z offsets",
+			"Check": "Check",
+			"Headline": "Tool offsets",
+			"Hint": "Saved is the offset in your config as loaded. New is the running offset, amber until SAVE_CONFIG. Delta is new minus saved."
+		},
+		"ToolTrimPanel": {
+			"Headline": "Tool trim",
+			"Hint": "Tap a tool, choose a step, then nudge its offsets. Adjustments apply immediately.",
+			"Stage": "Stage offsets",
+			"StageHint": "Stages the selected tool's offsets. Then run SAVE_CONFIG to write them.",
+			"Step": "Step (mm)"
+		}		    
     },
     "PowerDeviceChangeDialog": {
         "AreYouSure": "Are you sure?",

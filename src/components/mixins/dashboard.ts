@@ -79,6 +79,12 @@ export default class DashboardMixin extends BaseMixin {
                 return mdiMulticast
             case 'afc':
                 return afcIconLogo
+			case 'tool-offsets':
+                return mdiWrench
+            case 'tool-trim':
+                return mdiTune
+            case 'tool-counter':
+                return mdiCounter
 
             default:
                 return mdiInformation
